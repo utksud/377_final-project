@@ -120,3 +120,10 @@ public:
     bool loadFlightsFromFile(const string& filename);
     bool saveFlightsToFile(const string& filename) const;
 };
+
+// ==================== Menu and Helper Functions ====================
+int menu();
+void add_passenger(Flight* flight);
+void remove_passenger(Flight* flight);
+
+#endif // FLIGHTSYSTEM_H
