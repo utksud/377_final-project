@@ -1,5 +1,35 @@
-// ==================== 337.cpp ====================
+// ==================== FlightSystem.cpp ====================
 #include "classes.h"
+
+// ==================== Utility Functions Implementation ====================
+void cleanStandardInputStream(void) {
+    int leftover;
+    do {
+        leftover = cin.get();
+    } while (leftover != '\n' && leftover != EOF);
+}
+
+void clearScreen(void) {
+    #ifdef UNIX
+    system("clear");
+    #else
+    system("cls");
+    #endif
+}
+
+void pressEnter() {
+    cout << "\n<<< Press Enter to Continue >>>>\n";
+    cin.get();
+}
+
+void displayHeader() {
+    clearScreen();
+    cout << "\n Flight Management Application - Fall 2024\n";
+    cout << "\nVersion: 1.0 ";
+    cout << "\nTerm Project";
+    cout << "\nProduced by: Your Name\n\n";
+    pressEnter();
+}
 
 // ==================== Seat Class Implementation ====================
 Seat::Seat(int row, char character) 
@@ -243,4 +273,215 @@ void Airline::displayAllFlights() const {
             cout << "\n";
         }
     }
+}
+
+bool Airline::loadFlightsFromFile(const string& filename) {
+    ifstream file(filename);
+    if (!file.is_open()) {
+        cout << "Error: Could not open file " << filename << "\n";
+        return false;
+    }
+    
+    string line;
+    while (getline(file, line)) {
+        stringstream ss(line);
+        string flightNum, source, dest;
+        int rows, seatsPerRow;
+        
+        ss >> flightNum >> source >> dest >> rows >> seatsPerRow;
+        
+        Flight flight(flightNum, rows, seatsPerRow);
+        Route route(source, dest);
+        flight.setRoute(route);
+        flight.initializeSeats();
+        
+        addFlight(flight);
+    }
+    
+    file.close();
+    return true;
+}
+
+bool Airline::saveFlightsToFile(const string& filename) const {
+    ofstream file(filename);
+    if (!file.is_open()) {
+        cout << "Error: Could not save to file " << filename << "\n";
+        return false;
+    }
+    
+    for (const auto& flight : flights) {
+        file << flight.getFlightNumber() << " "
+             << flight.getRoute().getSource() << " "
+             << flight.getRoute().getDestination() << " "
+             << flight.getNumberOfRows() << " "
+             << flight.getNumberOfSeatsPerRow() << "\n";
+    }
+    
+    file.close();
+    cout << "Flight data saved successfully!\n";
+    return true;
+}
+
+// ==================== Menu Function Implementation ====================
+int menu() {
+    int choice = -1;
+    clearScreen();
+    cout << "\n=== Flight Management System ===\n\n";
+    cout << "Please select one of the following options:\n\n";
+    cout << "1. Display All Flights\n";
+    cout << "2. Select a Flight\n";
+    cout << "3. Display Flight Seat Map\n";
+    cout << "4. Display Passengers Information\n";
+    cout << "5. Add a New Passenger\n";
+    cout << "6. Remove an Existing Passenger\n";
+    cout << "7. Save Data\n";
+    cout << "8. Quit\n";
+    cout << "\nEnter your choice (1-8): ";
+    cin >> choice;
+    cleanStandardInputStream();
+    return choice;
+}
+
+// ==================== Add Passenger Function ====================
+void add_passenger(Flight* flight) {
+    if (flight == nullptr) {
+        cout << "No flight selected!\n";
+        pressEnter();
+        return;
+    }
+    
+    clearScreen();
+    cout << "\n=== Add New Passenger ===\n\n";
+    
+    string firstName, lastName, phone;
+    cout << "Enter first name: ";
+    cin >> firstName;
+    cleanStandardInputStream();
+    
+    cout << "Enter last name: ";
+    cin >> lastName;
+    cleanStandardInputStream();
+    
+    cout << "Enter phone number: ";
+    cin >> phone;
+    cleanStandardInputStream();
+    
+    Passenger p(firstName, lastName, phone);
+    flight->addPassenger(p);
+    
+    cout << "\nPassenger added successfully!\n";
+    pressEnter();
+}
+
+// ==================== Remove Passenger Function ====================
+void remove_passenger(Flight* flight) {
+    if (flight == nullptr) {
+        cout << "No flight selected!\n";
+        pressEnter();
+        return;
+    }
+    
+    clearScreen();
+    flight->displayPassengers();
+    
+    string firstName, lastName;
+    cout << "\nEnter first name of passenger to remove: ";
+    cin >> firstName;
+    cleanStandardInputStream();
+    
+    cout << "Enter last name of passenger to remove: ";
+    cin >> lastName;
+    cleanStandardInputStream();
+    
+    flight->removePassenger(firstName, lastName);
+    pressEnter();
+}
+
+// ==================== Main Function ====================
+int main() {
+    displayHeader();
+    
+    Airline airline("Sky Airways");
+    
+    // Load flights from file
+    cout << "Loading flight data from 'flights.txt'...\n";
+    if (airline.loadFlightsFromFile("flights.txt")) {
+        cout << "Flight data loaded successfully!\n";
+    } else {
+        cout << "Warning: Could not load flight data. Starting with empty airline.\n";
+    }
+    pressEnter();
+    
+    Flight* selectedFlight = nullptr;
+    int choice;
+    
+    while ((choice = menu()) != 8) {
+        switch (choice) {
+            case 1:  // Display all flights
+                airline.displayAllFlights();
+                pressEnter();
+                break;
+                
+            case 2:  // Select a flight
+                {
+                    airline.displayAllFlights();
+                    string flightNum;
+                    cout << "\nEnter flight number to select: ";
+                    cin >> flightNum;
+                    cleanStandardInputStream();
+                    
+                    selectedFlight = airline.getFlightByNumber(flightNum);
+                    if (selectedFlight != nullptr) {
+                        cout << "Flight " << flightNum << " selected!\n";
+                    } else {
+                        cout << "Flight not found!\n";
+                    }
+                    pressEnter();
+                }
+                break;
+                
+            case 3:  // Display seat map
+                if (selectedFlight != nullptr) {
+                    selectedFlight->show_seat_map();
+                } else {
+                    cout << "No flight selected!\n";
+                }
+                pressEnter();
+                break;
+                
+            case 4:  // Display passengers
+                if (selectedFlight != nullptr) {
+                    selectedFlight->displayPassengers();
+                } else {
+                    cout << "No flight selected!\n";
+                }
+                pressEnter();
+                break;
+                
+            case 5:  // Add passenger
+                add_passenger(selectedFlight);
+                break;
+                
+            case 6:  // Remove passenger
+                remove_passenger(selectedFlight);
+                break;
+                
+            case 7:  // Save data
+                clearScreen();
+                airline.saveFlightsToFile("flights.txt");
+                pressEnter();
+                break;
+                
+            default:
+                cout << "Invalid choice! Please try again.\n";
+                pressEnter();
+                break;
+        }
+    }
+    
+    clearScreen();
+    cout << "\nThank you for using Flight Management System!\n";
+    cout << "Goodbye!\n\n";
+    
+    return 0;
 }
