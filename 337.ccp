@@ -1,35 +1,5 @@
-// ==================== FlightSystem.cpp ====================
+// ==================== 337.cpp ====================
 #include "classes.h"
-
-// ==================== Utility Functions Implementation ====================
-void cleanStandardInputStream(void) {
-    int leftover;
-    do {
-        leftover = cin.get();
-    } while (leftover != '\n' && leftover != EOF);
-}
-
-void clearScreen(void) {
-    #ifdef UNIX
-    system("clear");
-    #else
-    system("cls");
-    #endif
-}
-
-void pressEnter() {
-    cout << "\n<<< Press Enter to Continue >>>>\n";
-    cin.get();
-}
-
-void displayHeader() {
-    clearScreen();
-    cout << "\n Flight Management Application - Fall 2024\n";
-    cout << "\nVersion: 1.0 ";
-    cout << "\nTerm Project";
-    cout << "\nProduced by: Your Name\n\n";
-    pressEnter();
-}
 
 // ==================== Seat Class Implementation ====================
 Seat::Seat(int row, char character) 
