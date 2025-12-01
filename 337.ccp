@@ -18,16 +18,16 @@ void clearScreen(void) {
 }
 
 void pressEnter() {
-    cout << "\n<<< Press Enter to Continue >>>>\n";
+    cout << "\n<<< Press Return to Continue>>>>\n";
     cin.get();
 }
 
 void displayHeader() {
     clearScreen();
-    cout << "\n Flight Management Application - Fall 2024\n";
-    cout << "\nVersion: 1.0 ";
-    cout << "\nTerm Project";
-    cout << "\nProduced by: Your Name\n\n";
+    cout << "\nFMAS Version: 1.0\n";
+    cout << "Term Project - Flight Management Application System\n";
+    cout << "Produced by group#: Your Group Number\n";
+    cout << "Names: Your Team Members Names\n";
     pressEnter();
 }
 
@@ -76,12 +76,13 @@ void Route::setDestination(const string& dest) {
 }
 
 void Route::display() const {
-    cout << source << " -> " << destination;
+    cout << source << " to " << destination;
 }
 
 // ==================== Passenger Class Implementation ====================
-Passenger::Passenger(string fname, string lname, string phone)
-    : first_name(fname), last_name(lname), phone_number(phone) {}
+Passenger::Passenger(string fname, string lname, string phone, int r, char s, int passenger_id)
+    : first_name(fname), last_name(lname), phone_number(phone), 
+      row(r), seat(s), id(passenger_id) {}
 
 string Passenger::getFirstName() const { 
     return first_name; 
@@ -93,6 +94,18 @@ string Passenger::getLastName() const {
 
 string Passenger::getPhoneNumber() const { 
     return phone_number; 
+}
+
+int Passenger::getRow() const {
+    return row;
+}
+
+char Passenger::getSeat() const {
+    return seat;
+}
+
+int Passenger::getId() const {
+    return id;
 }
 
 void Passenger::setFirstName(const string& fname) { 
@@ -107,8 +120,30 @@ void Passenger::setPhoneNumber(const string& phone) {
     phone_number = phone; 
 }
 
+void Passenger::setRow(int r) {
+    row = r;
+}
+
+void Passenger::setSeat(char s) {
+    seat = s;
+}
+
+void Passenger::setId(int passenger_id) {
+    id = passenger_id;
+}
+
 void Passenger::display() const {
-    cout << first_name << " " << last_name << " (Ph: " << phone_number << ")";
+    cout << first_name << " " << last_name << " (Ph: " << phone_number 
+         << ", Seat: " << row << seat << ", ID: " << id << ")";
+}
+
+void Passenger::displayInTable() const {
+    cout << left << setw(15) << first_name 
+         << setw(15) << last_name
+         << setw(20) << phone_number
+         << setw(8) << row
+         << setw(8) << seat
+         << setw(10) << id << endl;
 }
 
 // ==================== Flight Class Implementation ====================
@@ -132,47 +167,45 @@ Route Flight::getRoute() const {
     return route;
 }
 
+vector<Passenger> Flight::getPassengers() const {
+    return passengers;
+}
+
 void Flight::setRoute(const Route& r) {
     route = r;
 }
 
 void Flight::addPassenger(const Passenger& passenger) {
-    if (passengers.size() < seats.size()) {
-        passengers.push_back(passenger);
-        // Mark a seat as occupied
-        for (auto& seat : seats) {
-            if (!seat.isOccupied()) {
-                seat.setOccupied(true);
-                break;
-            }
-        }
-    } else {
-        cout << "Flight is full! Cannot add more passengers.\n";
+    // Check if seat is available
+    if (!isSeatAvailable(passenger.getRow(), passenger.getSeat())) {
+        cout << "Error: Seat " << passenger.getRow() << passenger.getSeat() 
+             << " is already occupied!\n";
+        return;
     }
+    
+    passengers.push_back(passenger);
+    occupySeat(passenger.getRow(), passenger.getSeat());
+    cout << "Passenger added successfully!\n";
 }
 
-void Flight::removePassenger(const string& firstName, const string& lastName) {
+void Flight::removePassengerById(int id) {
     for (size_t i = 0; i < passengers.size(); i++) {
-        if (passengers[i].getFirstName() == firstName && 
-            passengers[i].getLastName() == lastName) {
+        if (passengers[i].getId() == id) {
+            cout << "Passenger " << passengers[i].getFirstName() << " " 
+                 << passengers[i].getLastName() 
+                 << " was successfully removed from flight " << flight_number << endl;
+            
+            freeSeat(passengers[i].getRow(), passengers[i].getSeat());
             passengers.erase(passengers.begin() + i);
-            // Free up a seat
-            for (auto& seat : seats) {
-                if (seat.isOccupied()) {
-                    seat.setOccupied(false);
-                    break;
-                }
-            }
-            cout << "Passenger removed successfully!\n";
             return;
         }
     }
-    cout << "Passenger not found!\n";
+    cout << "Passenger with ID " << id << " not found!\n";
 }
 
 void Flight::initializeSeats() {
     seats.clear();
-    for (int row = 1; row <= number_of_rows; row++) {
+    for (int row = 0; row <= number_of_rows; row++) {
         for (int seat = 0; seat < number_of_seats_per_row; seat++) {
             char seat_char = 'A' + seat;
             seats.push_back(Seat(row, seat_char));
@@ -180,61 +213,112 @@ void Flight::initializeSeats() {
     }
 }
 
+bool Flight::isSeatAvailable(int row, char seat) const {
+    for (const auto& s : seats) {
+        if (s.getRowNumber() == row && s.getSeatCharacter() == seat) {
+            return !s.isOccupied();
+        }
+    }
+    return false;
+}
+
+void Flight::occupySeat(int row, char seat) {
+    for (auto& s : seats) {
+        if (s.getRowNumber() == row && s.getSeatCharacter() == seat) {
+            s.setOccupied(true);
+            return;
+        }
+    }
+}
+
+void Flight::freeSeat(int row, char seat) {
+    for (auto& s : seats) {
+        if (s.getRowNumber() == row && s.getSeatCharacter() == seat) {
+            s.setOccupied(false);
+            return;
+        }
+    }
+}
+
 void Flight::show_seat_map() const {
     clearScreen();
-    cout << "\n=== Seat Map for Flight " << flight_number << " ===\n";
-    cout << "Route: ";
-    route.display();
-    cout << "\n\n";
+    cout << "\nAircraft Seat Map for flight " << flight_number << endl;
+    cout << "     ";
     
-    // Display column headers
-    cout << "    ";
+    // Display column headers (A B C D E F)
     for (int i = 0; i < number_of_seats_per_row; i++) {
         cout << "  " << (char)('A' + i) << " ";
     }
     cout << "\n";
     
-    // Display seats row by row
-    int index = 0;
-    for (int row = 1; row <= number_of_rows; row++) {
-        cout << (row < 10 ? " " : "") << row << "  ";
-        for (int seat = 0; seat < number_of_seats_per_row; seat++) {
-            if (seats[index].isOccupied()) {
-                cout << " [X]";  // Occupied
-            } else {
-                cout << " [ ]";  // Available
-            }
-            index++;
+    // Display seats row by row with borders
+    for (int row = 0; row <= number_of_rows; row++) {
+        // Top border
+        cout << "     ";
+        for (int i = 0; i < number_of_seats_per_row; i++) {
+            cout << "+---";
         }
-        cout << "\n";
+        cout << "+\n";
+        
+        // Row number and seats
+        cout << setw(4) << row << " ";
+        for (int seat = 0; seat < number_of_seats_per_row; seat++) {
+            char seat_char = 'A' + seat;
+            bool occupied = false;
+            
+            // Check if seat is occupied
+            for (const auto& s : seats) {
+                if (s.getRowNumber() == row && s.getSeatCharacter() == seat_char && s.isOccupied()) {
+                    occupied = true;
+                    break;
+                }
+            }
+            
+            if (occupied) {
+                cout << "| X ";
+            } else {
+                cout << "|   ";
+            }
+        }
+        cout << "|\n";
     }
-    cout << "\n[X] = Occupied    [ ] = Available\n";
+    
+    // Bottom border
+    cout << "     ";
+    for (int i = 0; i < number_of_seats_per_row; i++) {
+        cout << "+---";
+    }
+    cout << "+\n";
 }
 
 void Flight::displayPassengers() const {
     clearScreen();
-    cout << "\n=== Passengers on Flight " << flight_number << " ===\n";
-    cout << "Route: ";
+    cout << "\nPassenger List (Flight:" << flight_number << " from ";
     route.display();
-    cout << "\n\n";
+    cout << ")\n";
     
     if (passengers.empty()) {
         cout << "No passengers on this flight.\n";
     } else {
-        for (size_t i = 0; i < passengers.size(); i++) {
-            cout << (i + 1) << ". ";
-            passengers[i].display();
-            cout << "\n";
+        cout << left << setw(15) << "First Name" 
+             << setw(15) << "Last Name"
+             << setw(20) << "Phone"
+             << setw(8) << "Row"
+             << setw(8) << "Seat"
+             << setw(10) << "ID" << endl;
+        cout << string(76, '-') << endl;
+        
+        for (const auto& p : passengers) {
+            p.displayInTable();
+            cout << string(76, '-') << endl;
         }
     }
-    cout << "\nTotal Passengers: " << passengers.size() << "\n";
 }
 
 void Flight::displayFlightInfo() const {
-    cout << "Flight: " << flight_number << " | ";
+    cout << flight_number << " ";
     route.display();
-    cout << " | Rows: " << number_of_rows 
-         << " | Seats/Row: " << number_of_seats_per_row;
+    cout << " " << number_of_rows << " " << number_of_seats_per_row;
 }
 
 // ==================== Airline Class Implementation ====================
@@ -263,7 +347,7 @@ Flight* Airline::getFlightByNumber(const string& flightNum) {
 
 void Airline::displayAllFlights() const {
     clearScreen();
-    cout << "\n=== " << name << " - All Flights ===\n\n";
+    cout << "\nHere is the list of available flights. Please select one:\n\n";
     if (flights.empty()) {
         cout << "No flights available.\n";
     } else {
@@ -302,7 +386,51 @@ bool Airline::loadFlightsFromFile(const string& filename) {
     return true;
 }
 
-bool Airline::saveFlightsToFile(const string& filename) const {
+bool Airline::loadPassengersFromFile(const string& filename) {
+    ifstream file(filename);
+    if (!file.is_open()) {
+        cout << "Error: Could not open file " << filename << "\n";
+        return false;
+    }
+    
+    string line;
+    while (getline(file, line)) {
+        stringstream ss(line);
+        string flightNum, firstName, lastName, phone, seatStr;
+        int id;
+        
+        ss >> flightNum >> firstName >> lastName >> phone >> seatStr >> id;
+        
+        // Parse seat (e.g., "6A" -> row=6, seat='A')
+        int row = 0;
+        char seat = 'A';
+        if (!seatStr.empty()) {
+            // Extract row number
+            size_t i = 0;
+            while (i < seatStr.length() && isdigit(seatStr[i])) {
+                row = row * 10 + (seatStr[i] - '0');
+                i++;
+            }
+            // Extract seat letter
+            if (i < seatStr.length()) {
+                seat = seatStr[i];
+            }
+        }
+        
+        Passenger p(firstName, lastName, phone, row, seat, id);
+        
+        // Find the flight and add passenger
+        Flight* flight = getFlightByNumber(flightNum);
+        if (flight != nullptr) {
+            flight->addPassenger(p);
+        }
+    }
+    
+    file.close();
+    return true;
+}
+
+bool Airline::savePassengersToFile(const string& filename) const {
     ofstream file(filename);
     if (!file.is_open()) {
         cout << "Error: Could not save to file " << filename << "\n";
@@ -310,15 +438,19 @@ bool Airline::saveFlightsToFile(const string& filename) const {
     }
     
     for (const auto& flight : flights) {
-        file << flight.getFlightNumber() << " "
-             << flight.getRoute().getSource() << " "
-             << flight.getRoute().getDestination() << " "
-             << flight.getNumberOfRows() << " "
-             << flight.getNumberOfSeatsPerRow() << "\n";
+        vector<Passenger> passengers = flight.getPassengers();
+        for (const auto& p : passengers) {
+            file << flight.getFlightNumber() << " "
+                 << p.getFirstName() << " "
+                 << p.getLastName() << " "
+                 << p.getPhoneNumber() << " "
+                 << p.getRow() << p.getSeat() << " "
+                 << p.getId() << "\n";
+        }
     }
     
     file.close();
-    cout << "Flight data saved successfully!\n";
+    cout << "All the data in the passenger list were saved.\n";
     return true;
 }
 
@@ -326,20 +458,45 @@ bool Airline::saveFlightsToFile(const string& filename) const {
 int menu() {
     int choice = -1;
     clearScreen();
-    cout << "\n=== Flight Management System ===\n\n";
-    cout << "Please select one of the following options:\n\n";
-    cout << "1. Display All Flights\n";
-    cout << "2. Select a Flight\n";
-    cout << "3. Display Flight Seat Map\n";
-    cout << "4. Display Passengers Information\n";
-    cout << "5. Add a New Passenger\n";
-    cout << "6. Remove an Existing Passenger\n";
-    cout << "7. Save Data\n";
-    cout << "8. Quit\n";
-    cout << "\nEnter your choice (1-8): ";
+    cout << "\nPlease select one of the following options:\n\n";
+    cout << "1. Select a flight\n";
+    cout << "2. Display Flight Seat Map\n";
+    cout << "3. Display Passengers Information\n";
+    cout << "4. Add a New Passenger\n";
+    cout << "5. Remove an Existing Passenger\n";
+    cout << "6. Save data\n";
+    cout << "7. Quit\n";
+    cout << "\nEnter your choice: (1, 2, 3, 4, 5, 6, or 7) ";
     cin >> choice;
     cleanStandardInputStream();
     return choice;
+}
+
+// ==================== Select Flight Function ====================
+void selectFlight(Airline& airline, Flight** selectedFlight) {
+    airline.displayAllFlights();
+    int flightChoice;
+    cout << "\nEnter your choice: ";
+    cin >> flightChoice;
+    cleanStandardInputStream();
+    
+    // Get flight by index (choice - 1)
+    string flightNum;
+    // This is a simplified version - you'd need to get the actual flight number
+    // For now, we'll ask for flight number directly
+    cout << "Enter flight number (e.g., WJ1145): ";
+    cin >> flightNum;
+    cleanStandardInputStream();
+    
+    *selectedFlight = airline.getFlightByNumber(flightNum);
+    if (*selectedFlight != nullptr) {
+        cout << "You have selected flight " << flightNum << " from ";
+        (*selectedFlight)->getRoute().display();
+        cout << ".\n";
+    } else {
+        cout << "Flight not found!\n";
+    }
+    pressEnter();
 }
 
 // ==================== Add Passenger Function ====================
@@ -351,26 +508,38 @@ void add_passenger(Flight* flight) {
     }
     
     clearScreen();
-    cout << "\n=== Add New Passenger ===\n\n";
     
+    int id;
     string firstName, lastName, phone;
-    cout << "Enter first name: ";
+    int row;
+    char seat;
+    
+    cout << "Please enter the passenger id: ";
+    cin >> id;
+    cleanStandardInputStream();
+    
+    cout << "Please enter the passenger first name: ";
     cin >> firstName;
     cleanStandardInputStream();
     
-    cout << "Enter last name: ";
+    cout << "Please enter the passenger last name: ";
     cin >> lastName;
     cleanStandardInputStream();
     
-    cout << "Enter phone number: ";
+    cout << "Please enter the passenger phone number: ";
     cin >> phone;
     cleanStandardInputStream();
     
-    Passenger p(firstName, lastName, phone);
-    flight->addPassenger(p);
+    cout << "Enter the passenger's desired row: ";
+    cin >> row;
+    cleanStandardInputStream();
     
-    cout << "\nPassenger added successfully!\n";
-    pressEnter();
+    cout << "Enter the passenger's desired seat: ";
+    cin >> seat;
+    cleanStandardInputStream();
+    
+    Passenger p(firstName, lastName, phone, row, seat, id);
+    flight->addPassenger(p);
 }
 
 // ==================== Remove Passenger Function ====================
@@ -382,65 +551,65 @@ void remove_passenger(Flight* flight) {
     }
     
     clearScreen();
-    flight->displayPassengers();
     
-    string firstName, lastName;
-    cout << "\nEnter first name of passenger to remove: ";
-    cin >> firstName;
+    int id;
+    cout << "Please enter the id of the passenger that needs to be removed: ";
+    cin >> id;
     cleanStandardInputStream();
     
-    cout << "Enter last name of passenger to remove: ";
-    cin >> lastName;
-    cleanStandardInputStream();
-    
-    flight->removePassenger(firstName, lastName);
+    flight->removePassengerById(id);
     pressEnter();
+}
+
+// ==================== Save Data Function ====================
+void save_data(const Airline& airline) {
+    clearScreen();
+    char response;
+    cout << "Do you want to save the data in the \"passengers.txt\"? Please answer <Y or N> ";
+    cin >> response;
+    cleanStandardInputStream();
+    
+    if (response == 'Y' || response == 'y') {
+        airline.savePassengersToFile("passengers.txt");
+    } else {
+        cout << "Data not saved.\n";
+    }
 }
 
 // ==================== Main Function ====================
 int main() {
     displayHeader();
     
-    Airline airline("Sky Airways");
+    Airline airline("Flight Management System");
     
     // Load flights from file
     cout << "Loading flight data from 'flights.txt'...\n";
     if (airline.loadFlightsFromFile("flights.txt")) {
         cout << "Flight data loaded successfully!\n";
     } else {
-        cout << "Warning: Could not load flight data. Starting with empty airline.\n";
+        cout << "Warning: Could not load flight data.\n";
     }
+    
+    // Load passengers from file
+    cout << "Loading passenger data from 'passengers.txt'...\n";
+    if (airline.loadPassengersFromFile("passengers.txt")) {
+        cout << "Passenger data loaded successfully!\n";
+    } else {
+        cout << "Warning: Could not load passenger data.\n";
+    }
+    
     pressEnter();
     
     Flight* selectedFlight = nullptr;
     int choice;
     
-    while ((choice = menu()) != 8) {
+    while ((choice = menu()) != 7) {
         switch (choice) {
-            case 1:  // Display all flights
-                airline.displayAllFlights();
-                pressEnter();
+            case 1:  // Select a flight
+                selectFlight(airline, &selectedFlight);
                 break;
                 
-            case 2:  // Select a flight
-                {
-                    airline.displayAllFlights();
-                    string flightNum;
-                    cout << "\nEnter flight number to select: ";
-                    cin >> flightNum;
-                    cleanStandardInputStream();
-                    
-                    selectedFlight = airline.getFlightByNumber(flightNum);
-                    if (selectedFlight != nullptr) {
-                        cout << "Flight " << flightNum << " selected!\n";
-                    } else {
-                        cout << "Flight not found!\n";
-                    }
-                    pressEnter();
-                }
-                break;
-                
-            case 3:  // Display seat map
+            case 2:  // Display seat map
                 if (selectedFlight != nullptr) {
                     selectedFlight->show_seat_map();
                 } else {
@@ -449,7 +618,7 @@ int main() {
                 pressEnter();
                 break;
                 
-            case 4:  // Display passengers
+            case 3:  // Display passengers
                 if (selectedFlight != nullptr) {
                     selectedFlight->displayPassengers();
                 } else {
@@ -458,17 +627,16 @@ int main() {
                 pressEnter();
                 break;
                 
-            case 5:  // Add passenger
+            case 4:  // Add passenger
                 add_passenger(selectedFlight);
                 break;
                 
-            case 6:  // Remove passenger
+            case 5:  // Remove passenger
                 remove_passenger(selectedFlight);
                 break;
                 
-            case 7:  // Save data
-                clearScreen();
-                airline.saveFlightsToFile("flights.txt");
+            case 6:  // Save data
+                save_data(airline);
                 pressEnter();
                 break;
                 
@@ -480,8 +648,7 @@ int main() {
     }
     
     clearScreen();
-    cout << "\nThank you for using Flight Management System!\n";
-    cout << "Goodbye!\n\n";
+    cout << "\nProgram terminated.\n";
     
     return 0;
 }
