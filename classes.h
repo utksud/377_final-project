@@ -132,6 +132,7 @@ public:
     string getName() const;
     
     Flight* getFlightByNumber(const string& flightNum);
+    Flight* getFlightByIndex(int index);
     void displayAllFlights() const;
     bool loadFlightsFromFile(const string& filename);
     bool loadPassengersFromFile(const string& filename);
@@ -146,3 +147,4 @@ void remove_passenger(Flight* flight);
 void save_data(const Airline& airline);
 
 #endif // FLIGHTSYSTEM_H
+
