@@ -7,6 +7,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <iomanip>
 using namespace std;
 
 // Forward declarations
@@ -60,19 +61,30 @@ private:
     string first_name;
     string last_name;
     string phone_number;
+    int row;
+    char seat;
+    int id;
 
 public:
-    Passenger(string fname = "", string lname = "", string phone = "");
+    Passenger(string fname = "", string lname = "", string phone = "", 
+              int r = 0, char s = 'A', int passenger_id = 0);
     
     string getFirstName() const;
     string getLastName() const;
     string getPhoneNumber() const;
+    int getRow() const;
+    char getSeat() const;
+    int getId() const;
     
     void setFirstName(const string& fname);
     void setLastName(const string& lname);
     void setPhoneNumber(const string& phone);
+    void setRow(int r);
+    void setSeat(char s);
+    void setId(int passenger_id);
     
     void display() const;
+    void displayInTable() const;
 };
 
 // ==================== Flight Class ====================
@@ -92,11 +104,15 @@ public:
     int getNumberOfRows() const;
     int getNumberOfSeatsPerRow() const;
     Route getRoute() const;
+    vector<Passenger> getPassengers() const;
     
     void setRoute(const Route& r);
     void addPassenger(const Passenger& passenger);
-    void removePassenger(const string& firstName, const string& lastName);
+    void removePassengerById(int id);
     void initializeSeats();
+    bool isSeatAvailable(int row, char seat) const;
+    void occupySeat(int row, char seat);
+    void freeSeat(int row, char seat);
     void show_seat_map() const;
     void displayPassengers() const;
     void displayFlightInfo() const;
@@ -118,12 +134,15 @@ public:
     Flight* getFlightByNumber(const string& flightNum);
     void displayAllFlights() const;
     bool loadFlightsFromFile(const string& filename);
-    bool saveFlightsToFile(const string& filename) const;
+    bool loadPassengersFromFile(const string& filename);
+    bool savePassengersToFile(const string& filename) const;
 };
 
 // ==================== Menu and Helper Functions ====================
 int menu();
+void selectFlight(Airline& airline, Flight** selectedFlight);
 void add_passenger(Flight* flight);
 void remove_passenger(Flight* flight);
+void save_data(const Airline& airline);
 
 #endif // FLIGHTSYSTEM_H
