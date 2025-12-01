@@ -345,6 +345,13 @@ Flight* Airline::getFlightByNumber(const string& flightNum) {
     return nullptr;
 }
 
+Flight* Airline::getFlightByIndex(int index) {
+    if (index >= 0 && index < (int)flights.size()) {
+        return &flights[index];
+    }
+    return nullptr;
+}
+
 void Airline::displayAllFlights() const {
     clearScreen();
     cout << "\nHere is the list of available flights. Please select one:\n\n";
@@ -476,25 +483,21 @@ int menu() {
 void selectFlight(Airline& airline, Flight** selectedFlight) {
     airline.displayAllFlights();
     int flightChoice;
-    cout << "\nEnter your choice: ";
+    cout << "\nEnter your choice using index number: ";
     cin >> flightChoice;
     cleanStandardInputStream();
     
-    // Get flight by index (choice - 1)
-    string flightNum;
-    // This is a simplified version - you'd need to get the actual flight number
-    // For now, we'll ask for flight number directly
-    cout << "Enter flight number (e.g., WJ1145): ";
-    cin >> flightNum;
-    cleanStandardInputStream();
+    // Need to get flight by index from the airline
+    // This requires adding a helper function in Airline class
+    // For now, use a workaround
     
-    *selectedFlight = airline.getFlightByNumber(flightNum);
+    *selectedFlight = airline.getFlightByIndex(flightChoice - 1);
     if (*selectedFlight != nullptr) {
-        cout << "You have selected flight " << flightNum << " from ";
+        cout << "You have selected flight " << (*selectedFlight)->getFlightNumber() << " from ";
         (*selectedFlight)->getRoute().display();
         cout << ".\n";
     } else {
-        cout << "Flight not found!\n";
+        cout << "Invalid flight selection!\n";
     }
     pressEnter();
 }
@@ -514,7 +517,7 @@ void add_passenger(Flight* flight) {
     int row;
     char seat;
     
-    cout << "Please enter the passenger id: ";
+    cout << "Please enter the passenger id (Ex: 10000,10001): ";
     cin >> id;
     cleanStandardInputStream();
     
